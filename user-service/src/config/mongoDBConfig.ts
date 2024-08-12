@@ -1,15 +1,18 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import path from 'path';
 
-// Load environment variables from .env file located in the parent directory of src
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// Load environment variables from .env file
+dotenv.config();
 
-const connectionString: string = process.env.MONGO_URI || '';
-console.log('MongoDB URI' + connectionString);
+// Build the connection string with credentials
+const { MONGO_USER, MONGO_PASSWORD, MONGO_DB, MONGO_HOST, MONGO_PORT } = process.env;
+
+const connectionString: string = `mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DB}`;
+
+console.log('MongoDB URI:', connectionString);
 
 // Define connectToDatabase as a named function
-export function connectToDatabase() :void {
+export function connectToDatabase(): void {
     try {
         mongoose.connect(connectionString);
         console.log('Connected to MongoDB');
@@ -17,4 +20,3 @@ export function connectToDatabase() :void {
         console.error('Error connecting to MongoDB:', error);
     }
 }
-

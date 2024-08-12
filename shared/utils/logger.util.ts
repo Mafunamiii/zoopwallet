@@ -7,8 +7,10 @@ const serviceFormat = format((info) => {
 })();
 
 // Define log format
-const logFormat = format.printf(({ timestamp, level, message, service }) => {
-    return `${timestamp} [${level}] [${service}]: ${message}`;
+const logFormat = format.printf(({ timestamp, level, message, service, ...metadata }) => {
+    // Include metadata in the log output
+    const meta = Object.keys(metadata).length ? ` ${JSON.stringify(metadata)}` : '';
+    return `${timestamp} [${level}] [${service}]: ${message}${meta}`;
 });
 
 // Create the logger
@@ -31,4 +33,3 @@ const logger = createLogger({
 export const loggerCreate = (serviceName: string) => {
     return logger.child({ service: serviceName });
 };
-

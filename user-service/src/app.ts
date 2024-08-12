@@ -1,5 +1,6 @@
 import express from 'express';
 import {loggerCreate, requestLogger} from "./index";
+import {userRouter} from "./routes";
 
 
 const app = express();
@@ -8,11 +9,11 @@ const reqlogger = requestLogger('user-service');
 
 app.use(express.json());
 app.use(reqlogger);
+app.use('/user', userRouter)
 logger.info('Express app initialized');
 
 app.get('/user',(req,res)=>{
-    res.send('Hello World');
-    logger.info('Hello World');
+
 })
 
 

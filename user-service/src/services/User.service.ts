@@ -1,14 +1,20 @@
 import { UserModel, TUser, UserInput } from '../model';
 import { UserStatus } from '../enum';
-import {IUserRepository} from "../repository";
+import { v4 as uuidv4 } from 'uuid';
+import {loggerCreate} from "../";
+
+const logger = loggerCreate('user-service-service');
 
 export class UserService {
-    constructor(private userRepository: IUserRepository) {
-    }
+    constructor() {}
 
     async createUser(userInput: UserInput): Promise<TUser> {
+        logger.info("Creating user", { userInput });
         const newUser = new UserModel(userInput);
-        return await newUser.save();
+        newUser.status = UserStatus.ACTIVE;
+        logger.info("Saving user to database", { user: newUser });
+        const savedUser = await newUser.save();
+        return savedUser;
     }
 
     async getUserById(id: string): Promise<TUser | null> {
