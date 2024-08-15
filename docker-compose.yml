@@ -2,12 +2,14 @@
 services:
   user-service:
     build:
-      context: ./user-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: user-service/Dockerfile
     ports:
       - "8080:8080"
+    volumes:
+      - ./shared:/src/shared
     environment:
-      - MONGO_URI=mongodb://mongo:27017/userdb
+      - PORT=8080
     depends_on:
       - mongo
     networks:
@@ -15,13 +17,9 @@ services:
 
   mongo:
     image: mongo:latest
-    container_name: my-mongo
+    container_name: ZoopMongo
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-      MONGO_INITDB_DATABASE: userdb
     volumes:
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:

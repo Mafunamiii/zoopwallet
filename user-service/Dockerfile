@@ -1,24 +1,20 @@
 # Use Node.js 20 as the base image
 FROM node:20
 
-# Set the working directory
-WORKDIR /usr/src/app
+WORKDIR /src
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy the package.json and package-lock.json files
+COPY user-service/package*.json ./
 
-# Install dependencies
+# Install dependencies including development dependencies (TypeScript)
 RUN npm install
-# Install TypeScript globally
-RUN npm install -g typescript
 
-# Copy the rest of the application code
-COPY . .
-COPY .env .
-
+# Copy the application code
+COPY user-service/src /src
+COPY ../shared /src/shared
 
 # Build the TypeScript code
-RUN tsc
+RUN npx tsc
 
 # Expose the application port
 EXPOSE 8080
