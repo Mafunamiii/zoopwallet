@@ -23,5 +23,5 @@ const userSchema = new Schema<TUser>({
         enum: Object.values(UserStatus),
         default: UserStatus.ACTIVE
     }
-}, {timestamps: true});
+}, {timestamps: true, collection: 'user'});
 export const UserModel = model<TUser>('User', userSchema);
