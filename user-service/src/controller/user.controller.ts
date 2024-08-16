@@ -9,8 +9,7 @@ import jwt from 'jsonwebtoken';
 const logger = loggerCreate('user-service-controller');
 
 export class UserController {
-
-    _userService;
+    _userService: UserService;
     _jwtSecret?: string;
 
     constructor(userService: UserService) {
@@ -21,9 +20,16 @@ export class UserController {
         this._jwtSecret = jwtSecret;
     }
 
+    private ensureJwtSecret() {
+        if (!this._jwtSecret) {
+            throw new Error('JWT secret is not set');
+        }
+    }
 
     async createUser(req: Request, res: Response, next: NextFunction) {
         logger.info("Received request to create a user");
+
+        // Validate request body
         const validationResult = createUserSchema.safeParse(req.body);
         logger.info("Validating request body");
 
@@ -31,16 +37,23 @@ export class UserController {
             logger.warn("Validation failed", { errors: validationResult.error.errors });
             return res.status(400).json({ errors: validationResult.error.errors });
         }
+
         const userData = validationResult.data;
-        const user = {
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            password: userData.password,
-            role: UserStatus.ACTIVE
-        }
+
         try {
+            const hashedPassword = await bcrypt.hash(userData.password, 10);
+
+            const user = {
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                email: userData.email,
+                password: hashedPassword,
+                role: UserStatus.ACTIVE
+            };
+
             logger.info("Creating user", { user });
+
+            // Create user
             const createdUser = await this._userService.createUser(user);
             logger.info("User created successfully", { user: createdUser });
 
@@ -63,7 +76,7 @@ export class UserController {
             }
 
             logger.info(`User with ID ${userId} retrieved successfully`, { user });
-            return res.status(200).json({message: 'User retrieved succesfully:', user: user });
+            return res.status(200).json({ message: 'User retrieved successfully', user: user });
         } catch (error: any) {
             logger.error(`Error retrieving user with ID ${userId}`, { error });
             return res.status(500).json({ message: 'Error retrieving user', error: error.message });
@@ -80,6 +93,7 @@ export class UserController {
             logger.warn("Validation failed", { errors: validationResult.error.errors });
             return res.status(400).json({ errors: validationResult.error.errors });
         }
+
         const updateData = validationResult.data;
 
         try {
@@ -135,7 +149,6 @@ export class UserController {
         const { email, password } = req.body;
 
         try {
-            // Check if user exists
             const user = await this._userService.getUserByEmail(email);
 
             if (!user) {
@@ -143,7 +156,6 @@ export class UserController {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
-            // Validate password
             const isPasswordValid = await bcrypt.compare(password, user.password);
 
             if (!isPasswordValid) {
@@ -151,15 +163,18 @@ export class UserController {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
-            // Check if user is active
             if (user.status !== UserStatus.ACTIVE) {
                 logger.warn("User account is inactive", { email });
                 return res.status(403).json({ message: 'Account is inactive' });
             }
 
-            // Generate JWT
+            if (!this._jwtSecret) {
+                logger.error("JWT secret is not defined");
+                return res.status(500).json({ message: 'Internal server error' });
+            }
+
             const token = jwt.sign(
-                { userId: user.id, email: user.email, role: user.role },
+                { userId: user.id, email: user.email, role: user.role }, // Ensure userId is a string
                 this._jwtSecret,
                 { expiresIn: '1h' } // Token expires in 1 hour
             );
@@ -172,4 +187,5 @@ export class UserController {
             return res.status(500).json({ message: 'Error during login', error: error.message });
         }
     }
+
 }
