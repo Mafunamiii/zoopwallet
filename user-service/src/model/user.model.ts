@@ -24,4 +24,6 @@ const userSchema = new Schema<TUser>({
         default: UserStatus.ACTIVE
     }
 }, {timestamps: true, collection: 'user'});
+
+
 export const UserModel = model<TUser>('User', userSchema);

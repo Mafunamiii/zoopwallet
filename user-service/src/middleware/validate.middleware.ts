@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {UserStatus} from "../enum";
 
 export const createUserSchema = z.object({
     firstName: z.string().min(2).max(255),
@@ -11,4 +12,12 @@ export const createUserSchema = z.object({
         .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
         .regex(/\d/, 'Password must contain at least one digit')
         .regex(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character')
+});
+
+export const updateUserSchema = z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    email: z.string().email().optional(),
+    password: z.string().min(8).optional(),
+    role: z.string().optional(),
 });

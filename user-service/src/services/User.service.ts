@@ -12,6 +12,7 @@ export class UserService {
         logger.info("Creating user", { userInput });
         const newUser = new UserModel(userInput);
         newUser.status = UserStatus.ACTIVE;
+        newUser.role = "user";
         logger.info("Saving user to database", { user: newUser });
         const savedUser = await newUser.save();
         return savedUser;

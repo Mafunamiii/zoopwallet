@@ -1,1 +1,1 @@
-export { createUserSchema } from './validate.middleware';
+export { createUserSchema, updateUserSchema } from './validate.middleware';
