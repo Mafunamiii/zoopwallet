@@ -1,6 +1,5 @@
 import { UserModel, TUser, UserInput } from '../model';
 import { UserStatus } from '../enum';
-import { v4 as uuidv4 } from 'uuid';
 import {loggerCreate} from "../";
 
 const logger = loggerCreate('user-service-service');

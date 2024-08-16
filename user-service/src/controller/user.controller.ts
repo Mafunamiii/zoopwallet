@@ -1,18 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
-import { createUserSchema, updateUserSchema } from '../middleware'; // Assume you have updateUserSchema for validation
+import { createUserSchema, updateUserSchema } from '../middleware';
 import { UserService } from '../services';
 import { loggerCreate } from "../index";
 import { UserStatus } from "../enum";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const logger = loggerCreate('user-service-controller');
 
 export class UserController {
 
     _userService;
+    _jwtSecret?: string;
 
     constructor(userService: UserService) {
         this._userService = userService;
     }
+
+    setJwtSecret(jwtSecret: string) {
+        this._jwtSecret = jwtSecret;
+    }
+
 
     async createUser(req: Request, res: Response, next: NextFunction) {
         logger.info("Received request to create a user");
@@ -118,6 +126,50 @@ export class UserController {
         } catch (error: any) {
             logger.error("Error retrieving users", { error });
             return res.status(500).json({ message: 'Error retrieving users', error: error.message });
+        }
+    }
+
+    async login(req: Request, res: Response, next: NextFunction) {
+        logger.info("Received login request");
+
+        const { email, password } = req.body;
+
+        try {
+            // Check if user exists
+            const user = await this._userService.getUserByEmail(email);
+
+            if (!user) {
+                logger.warn("User not found", { email });
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+
+            // Validate password
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+
+            if (!isPasswordValid) {
+                logger.warn("Invalid password", { email });
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+
+            // Check if user is active
+            if (user.status !== UserStatus.ACTIVE) {
+                logger.warn("User account is inactive", { email });
+                return res.status(403).json({ message: 'Account is inactive' });
+            }
+
+            // Generate JWT
+            const token = jwt.sign(
+                { userId: user.id, email: user.email, role: user.role },
+                this._jwtSecret,
+                { expiresIn: '1h' } // Token expires in 1 hour
+            );
+
+            logger.info("Login successful, JWT generated", { email });
+
+            return res.status(200).json({ message: 'Login successful', token });
+        } catch (error: any) {
+            logger.error("Error during login", { error });
+            return res.status(500).json({ message: 'Error during login', error: error.message });
         }
     }
 }

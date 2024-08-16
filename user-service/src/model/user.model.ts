@@ -1,7 +1,8 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types  } from 'mongoose';
 import { UserStatus } from '../enum';
 
 export type TUser = {
+    id?: Types.ObjectId;
     firstName: string;
     lastName: string;
     email: string;
