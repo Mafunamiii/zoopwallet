@@ -1,7 +1,7 @@
 import express from 'express';
 import {loggerCreate, requestLogger} from "./index";
 import {userRouter} from "./routes";
-
+import dotenv from "dotenv";
 
 const app = express();
 const logger = loggerCreate('user-service-app');

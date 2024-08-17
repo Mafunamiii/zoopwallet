@@ -1,35 +1,39 @@
 import { createLogger, format, transports } from 'winston';
 
-// Define a custom format that includes the service name
 const serviceFormat = format((info) => {
-    info.service = info.service || 'unknown'; // Default to 'unknown' if not specified
+    info.service = info.service || 'unknown';
     return info;
 })();
 
-// Define log format
+
 const logFormat = format.printf(({ timestamp, level, message, service, ...metadata }) => {
-    // Include metadata in the log output
+    let formattedMessage = message;
+
+    if (metadata && metadata.stack) {
+        formattedMessage += `\n${metadata.stack}`;
+        delete metadata.stack;
+    }
+
     const meta = Object.keys(metadata).length ? ` ${JSON.stringify(metadata)}` : '';
-    return `${timestamp} [${level}] [${service}]: ${message}${meta}`;
+    return `${timestamp} [${level}] [${service}]: ${formattedMessage}${meta}`;
 });
 
-// Create the logger
 const logger = createLogger({
-    level: 'info', // Default logging level
+    level: 'info',
     format: format.combine(
-        serviceFormat, // Add service to the log info
+        serviceFormat,
         format.timestamp({
             format: 'YYYY-MM-DD HH:mm:ss'
         }),
         format.colorize(),
+        format.errors({ stack: true }),
         logFormat
     ),
     transports: [
-        new transports.Console(), // Log to the console
+        new transports.Console(),
     ],
 });
 
-// Export a function to create a logger with a specific service context
 export const loggerCreate = (serviceName: string) => {
     return logger.child({ service: serviceName });
 };

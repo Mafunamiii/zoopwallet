@@ -1,5 +1,6 @@
 import { Schema, model, Document, Types  } from 'mongoose';
 import { UserStatus } from '../enum';
+import bcrypt from "bcryptjs";
 
 export type TUser = {
     id?: Types.ObjectId;
@@ -26,5 +27,15 @@ const userSchema = new Schema<TUser>({
     }
 }, {timestamps: true, collection: 'user'});
 
+export async function checkPassword(password: string, hashedPassword: string): Promise<boolean> {
+    return await bcrypt.compare(password, hashedPassword);
+}
+
+userSchema.pre('save', async function (next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 10);
+    }
+    next();
+});
 
 export const UserModel = model<TUser>('User', userSchema);

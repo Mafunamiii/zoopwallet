@@ -1,1 +1,1 @@
-export {loggerCreate, requestLogger} from '../../shared';
+export {loggerCreate, requestLogger, AuthenticatedRequest , authenticateJWT} from '../../shared';
