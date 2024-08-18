@@ -1,5 +1,4 @@
 import {z} from 'zod';
-import {UserStatus} from "../enum";
 
 export const createUserSchema = z.object({
     firstName: z.string().min(2).max(255),

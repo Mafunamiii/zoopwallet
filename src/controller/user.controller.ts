@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { createUserSchema, updateUserSchema, AuthenticatedRequest } from '../middleware';
+import { AuthenticatedRequest } from '../middleware';
 import { UserService } from '../services';
 import { UserStatus } from "../enum";
 import jwt from 'jsonwebtoken';
 import {checkPassword} from "../model";
-import {loggerCreate} from "../utils";
+import {createUserSchema, loggerCreate, updateUserSchema} from "../utils";
 
 const logger = loggerCreate('user-service-controller');
 
