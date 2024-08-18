@@ -1,1 +1,1 @@
-export { TUser, UserInput, UserModel } from './user.model';
+export { TUser, UserInput, UserModel, checkPassword } from './user.model';
