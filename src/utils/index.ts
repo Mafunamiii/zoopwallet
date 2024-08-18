@@ -1,2 +1,7 @@
 export { loggerCreate} from './logger.util';
-export { createUserSchema, updateUserSchema } from './validator.util';
+export {
+    validateUserCreation,
+    validateUserLogin,
+    validateUserUpdate,
+    validateWalletCreation
+} from './validator.util';

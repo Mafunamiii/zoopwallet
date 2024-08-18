@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import {UserModel} from "../model";
+import {TUser, UserModel} from "../model";
 import {loggerCreate} from "../utils";
 import dotenv from "dotenv";
 import * as path from "node:path";
@@ -14,7 +14,7 @@ interface DecodedToken extends JwtPayload {
 }
 
 export interface AuthenticatedRequest extends Request {
-    user?: any;  // You may replace `any` with the actual user type if available
+    user? : any;
 }
 
 export const authenticateJWT = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

@@ -4,7 +4,7 @@ import { UserService } from '../services';
 import { UserStatus } from "../enum";
 import jwt from 'jsonwebtoken';
 import {checkPassword} from "../model";
-import {createUserSchema, loggerCreate, updateUserSchema} from "../utils";
+import {validateUserCreation, loggerCreate, validateUserUpdate} from "../utils";
 
 const logger = loggerCreate('user-service-controller');
 
@@ -29,7 +29,7 @@ export class UserController {
     async createUser(req: Request, res: Response, next: NextFunction) {
         logger.info("Received request to create a user");
 
-        const validationResult = createUserSchema.safeParse(req.body);
+        const validationResult = validateUserCreation.safeParse(req.body);
         if (!validationResult.success) {
             logger.warn("Validation failed", { errors: validationResult.error.errors });
             return res.status(400).json({ errors: validationResult.error.errors });
@@ -100,9 +100,8 @@ export class UserController {
 
     async logout(req: AuthenticatedRequest, res: Response, next: NextFunction) {
         logger.info("Received logout request");
-        logger.info("JWT_SECRET: ", { jwtSecret: this._jwtSecret });
         try {
-            const userId = req.user._id;
+            const userId = req.user?.id?.toString();
 
             if (!userId) {
                 return res.status(401).json({ message: 'Unauthorized' }); // Early return if unauthorized
@@ -146,7 +145,7 @@ export class UserController {
     async updateUser(req: Request, res: Response, next: NextFunction) {
         const userId = req.params.id;
         logger.info(`Received request to update user by ID: ${userId}`);
-        const validationResult = updateUserSchema.safeParse(req.body);
+        const validationResult = validateUserUpdate.safeParse(req.body);
         logger.info("Validating request body");
 
         if (!validationResult.success) {

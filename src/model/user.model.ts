@@ -10,9 +10,15 @@ export type TUser = {
     password: string;
     role: string;
     status: UserStatus;
+    wallet?: IWallet;
 }
 
-export type UserInput = Omit<TUser, 'role' | 'createdAt' | 'updatedAt' | 'status'>;
+export interface IWallet {
+    balance: number;
+    stripeCustomerId: string;
+}
+
+export type UserInput = Omit<TUser, 'role' | 'createdAt' | 'updatedAt' | 'status' | 'wallet'>;
 
 const userSchema = new Schema<TUser>({
     firstName: { type: String, required: true },
@@ -24,6 +30,10 @@ const userSchema = new Schema<TUser>({
         type: String,
         enum: Object.values(UserStatus),
         default: UserStatus.ACTIVE
+    },
+    wallet: {
+        balance: { type: Number, default: 0, min: 0 },
+        stripeCustomerId: { type: String},
     }
 }, {timestamps: true, collection: 'user'});
 

@@ -6,7 +6,7 @@ import path from "node:path";
 import {loggerCreate} from "../utils";
 import {authenticateJWT, errorHandler} from "../middleware";
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config();
 const logger = loggerCreate('user-service-routes');
 
 
@@ -17,16 +17,28 @@ const userService = new UserService();
 const userController = new UserController(userService, JWT_SECRET);
 
 
-// Unprotected routes (no middleware)
-userRouter.post('/Uregister', (req, res, next) => userController.createUser(req, res, next));
-userRouter.post('/login', (req, res, next) => userController.login(req, res, next));
+userRouter.post('/Uregister', (req, res, next) =>
+    userController.createUser(req, res, next)
+);
+userRouter.post('/login', (req, res, next) =>
+    userController.login(req, res, next)
+);
 
-// Protected routes (require authentication)
-userRouter.get('/:id', authenticateJWT, (req, res, next) => userController.getUserById(req, res, next));
-userRouter.get('/', authenticateJWT, (req, res, next) => userController.getAllUsers(req, res, next));
-userRouter.put('/:id', authenticateJWT, (req, res, next) => userController.updateUser(req, res, next));
-userRouter.delete('/:id', authenticateJWT, (req, res, next) => userController.deleteUser(req, res, next));
-userRouter.post('/logout', authenticateJWT, (req, res, next) => userController.logout(req, res, next));
+userRouter.get('/:id', authenticateJWT, (req, res, next) =>
+    userController.getUserById(req, res, next)
+);
+userRouter.get('/', authenticateJWT, (req, res, next) =>
+    userController.getAllUsers(req, res, next)
+);
+userRouter.put('/:id', authenticateJWT, (req, res, next) =>
+    userController.updateUser(req, res, next)
+);
+userRouter.delete('/:id', authenticateJWT, (req, res, next) =>
+    userController.deleteUser(req, res, next)
+);
+userRouter.post('/logout', authenticateJWT, (req, res, next) =>
+    userController.logout(req, res, next)
+);
 
 userRouter.use(errorHandler)
 export { userRouter };
