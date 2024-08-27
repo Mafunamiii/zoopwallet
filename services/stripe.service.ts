@@ -117,6 +117,7 @@ class StripeService {
   }
 
   static async confirmPaymentIntent(paymentIntentId:string, paymentMethodId: string) {
+    logger.info(`[stripe-service]Confirming PaymentIntent: ${paymentIntentId}`);
     try {
       const confirmedPaymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
         payment_method: paymentMethodId,

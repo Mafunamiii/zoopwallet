@@ -2,7 +2,6 @@ import StripeService from '../services/stripe.service';
 import validator from '../utils/validator';
 import logger from '../utils/logger';
 import { Request, Response } from 'express';
-import Stripe from "stripe";
 
 const initStripeService = (req : Request) => {
   const stripeSecretKey = req.headers['stripe-secret-key'];

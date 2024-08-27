@@ -39,15 +39,18 @@ router.post("/create-payment-intent", authenticateJWT, async (req, res) => {
 });
 
 router.post("/confirm-payment-intent", authenticateJWT, async (req, res) => {
+  logger.info("WalletRoutes-Request body:", req.body);
   try {
-    const { paymentIntentId, paymentMethodId } = req.body;
+    const {paymentIntentId, paymentMethodId } = req.body; // Access properties directly
+    logger.info("user_id:", req.body.user._id);
     const result = await WalletService.confirmPaymentIntent(
-      req.body.user.id,
+     req.body.user._id,
       paymentIntentId,
       paymentMethodId
     );
     res.json(result);
   } catch (error) {
+    logger.error("WalletRoutes-Error:", error);
     res.status(400).json({ error: error });
   }
 });

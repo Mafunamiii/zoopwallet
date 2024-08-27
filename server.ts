@@ -5,9 +5,10 @@ import routes from './routes';
 import config from './config';
 import errorHandler from "./middleware/error.middleware";
 import errorMiddleware from "./middleware/error.middleware";
+import logger from "./utils/logger";
 
 const app = express();
-
+logger.info('Starting server...' + config.mongoURI);
 mongoose.connect(config.mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,

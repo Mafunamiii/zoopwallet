@@ -191,11 +191,12 @@ class WalletService {
     if (!wallet) {
       throw new Error("Wallet not found");
     }
-
+    logger.info(`Wallet: ${JSON.stringify(wallet)}`);
     const paymentMethod = await PaymentMethod.findOne({
       user: userId,
       stripePaymentMethodId: paymentMethodId
     });
+    logger.info(`Payment method: ${JSON.stringify(paymentMethod)}`);
 
     if (!paymentMethod) {
       throw new Error("Payment method not found or does not belong to this user");
@@ -217,8 +218,9 @@ class WalletService {
         paymentMethodId
       );
     }
-
+    logger.info(`Payment intent: ${JSON.stringify(paymentIntent)}`);
     if (paymentIntent.status === "succeeded") {
+      logger.info(`Payment succeeded for user ${userId}`);
       const amount = paymentIntent.amount / 100; // Convert from cents to dollars
       wallet.balance += amount;
       await wallet.save();
@@ -230,6 +232,7 @@ class WalletService {
         wallet._id,
         paymentIntent.id
       );
+      logger.info(`Transaction: ${JSON.stringify(transaction)}`);
 
       // Send notification
       await NotificationService.notifyDeposit(userId, amount, transaction._id);
@@ -682,6 +685,7 @@ class WalletService {
     status = "completed",
     metadata = {}
   ) {
+    logger.info(`Creating transaction: type=${type}, amount=${amount}, fromWallet=${fromWalletId}, toWallet=${toWalletId}, status=${status}`);
     const transaction = new Transaction({
       type,
       amount,
@@ -691,7 +695,7 @@ class WalletService {
       stripePaymentIntentId,
       metadata,
     });
-
+    logger.info(`Transaction: ${JSON.stringify(transaction)}`);
     await transaction.save();
     return transaction;
   }
