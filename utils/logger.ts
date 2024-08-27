@@ -8,7 +8,12 @@ const logger = winston.createLogger({
     }),
     winston.format.errors({ stack: true }),
     winston.format.splat(),
-    winston.format.json()
+      winston.format.printf((info) => {
+        if (info.stack) {
+          info.stack = info.stack.split('\n').map((line: string) => `    ${line}`).join('\n');
+        }
+        return JSON.stringify(info);
+      })
   ),
   defaultMeta: { service: 'e-wallet-api' },
   transports: [

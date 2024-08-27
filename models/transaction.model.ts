@@ -19,11 +19,6 @@ const transactionSchema = new mongoose.Schema({
     ref: "Wallet",
     required: true
   },
-  toWallet: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Wallet",
-    required: true
-  },
   status: {
     type: String,
     enum: ["pending", "completed", "failed"],

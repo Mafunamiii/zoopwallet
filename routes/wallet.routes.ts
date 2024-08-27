@@ -110,6 +110,7 @@ router.post("/withdraw", authenticateJWT, async (req, res) => {
   try {
     const { amount } = req.body;
     const result = await WalletService.withdraw(req.body.user.id, amount);
+    logger.info("WalletRoutes-Result:", result);
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error });
@@ -119,7 +120,9 @@ router.post("/withdraw", authenticateJWT, async (req, res) => {
 router.post("/transfer", authenticateJWT, async (req, res) => {
   try {
     const { toUserId, amount } = req.body;
+    logger.info("WalletRoutes-toUserId:", toUserId, "amount:", amount, "user_id:", req.body.user.id);
     const result = await WalletService.transfer(req.body.user.id, toUserId, amount);
+    logger.info("WalletRoutes-Result:", result);
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error });
@@ -136,6 +139,7 @@ router.get("/transactions", authenticateJWT, async (req, res) => {
 });
 
 router.post("/deposit", authenticateJWT, async (req, res) => {
+  logger.info("WalletRoutes-Request body:", req.body);
   try {
     const { amount, paymentMethodId } = req.body;
     const result = await WalletService.deposit(

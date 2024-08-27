@@ -50,7 +50,7 @@ class WalletService {
       if (initialBalance > 0) {
         const transaction = await this.createTransaction("deposit", initialBalance, '', wallet._id);
         // Send notification for initial balance as a deposit
-        await NotificationService.notifyDeposit(userId, initialBalance, transaction._id);
+        //await NotificationService.notifyDeposit(userId, initialBalance, transaction._id);
       }
 
       logger.info(`Wallet created for user ${userId} with initial balance ${initialBalance}`);
@@ -113,12 +113,13 @@ class WalletService {
         const transaction = await this.createTransaction(
           "deposit",
           depositAmount,
-          '',
           wallet._id,
+            '',
+            'completed'
         );
 
         // Send notification
-        await NotificationService.notifyDeposit(wallet.user, depositAmount, transaction._id);
+        //await NotificationService.notifyDeposit(wallet.user, depositAmount, transaction._id);
 
         return {
           balance: wallet.balance,
@@ -168,7 +169,6 @@ class WalletService {
           paymentMethodId
       );
     }
-
     if (!paymentIntent) {
       paymentIntent = await StripeService.createPaymentIntent(
         amount,
@@ -177,7 +177,6 @@ class WalletService {
           ''
       );
     }
-
     return {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
@@ -228,9 +227,9 @@ class WalletService {
       const transaction = await this.createTransaction(
         "deposit",
         amount,
-        '',
         wallet._id,
-        paymentIntent.id
+        paymentIntent.id,
+          "pending"
       );
       logger.info(`Transaction: ${JSON.stringify(transaction)}`);
 
@@ -391,7 +390,13 @@ class WalletService {
     }
   }
 
+  static async getWalletByCustomerId(stripeCustomerId: string) {
+    const wallet = await Wallet.findOne({ stripeCustomerId });
+    return wallet;
+  }
+
   static async withdraw(userId: string, amount: number) {
+    let oldBalance;
     try {
       const wallet = await Wallet.findOne({ user: userId });
       if (!wallet) {
@@ -401,6 +406,8 @@ class WalletService {
       if (wallet.balance < amount) {
         throw new Error("Insufficient funds");
       }
+
+        oldBalance = wallet.balance;
 
       const payout = await StripeService.createPayout(
         amount,
@@ -414,14 +421,15 @@ class WalletService {
         "withdraw",
         amount,
         wallet._id,
-        '',
-        payout.id
+          '',
+          'completed',
+
       );
 
       // Send notification
-      await NotificationService.notifyWithdrawal(userId, amount, transaction._id, "completed", "bank_transfer");
+      //await NotificationService.notifyWithdrawal(userId, amount, transaction._id, "completed", "bank_transfer");
 
-      return { balance: wallet.balance, payoutId: payout.id };
+      return { Old_Balance: oldBalance, New_Balance: wallet.balance };
     } catch (error) {
       logger.error("Error in withdraw:", error);
       throw new Error(`Withdrawal failed: ${error}`);
@@ -429,13 +437,17 @@ class WalletService {
   }
 
   static async transfer(fromUserId: string, toUserId: string, amount: number) {
+    logger.info(`Transferring ${amount} from ${fromUserId} to ${toUserId}`);
     try {
       const fromWallet = await Wallet.findOne({ user: fromUserId });
       const toWallet = await Wallet.findOne({ user: toUserId });
 
-      if (!fromWallet || !toWallet) {
-        throw new Error("One or both wallets not found");
+      if (!fromWallet) {
+        throw new Error("Sender wallet not found");
       }
+        if (!toWallet) {
+            throw new Error("Recipient wallet not found");
+        }
 
       if (fromWallet.balance < amount) {
         throw new Error("Insufficient funds");
@@ -505,8 +517,7 @@ class WalletService {
       await this.createTransaction(
         "transfer",
         amount,
-        '', // fromWallet is null for QR code generation
-        wallet._id,
+        wallet._id, // fromWallet is null for QR code generation
         '',
         "pending",
         { paymentId }
@@ -599,6 +610,7 @@ class WalletService {
   }
 
   static async confirmQRPayment(payerId: string, paymentIntentId: string, paymentMethodId: string) {
+    logger.info(`Confirming QR payment: payerId=${payerId}, paymentIntentId=${paymentIntentId}, paymentMethodId=${paymentMethodId}`);
     try {
       const paymentMethod = await PaymentMethod.findOne({
         user: payerId,
@@ -636,12 +648,12 @@ class WalletService {
         transaction.status = "completed";
         await transaction.save();
 
-        const recipientWallet = await Wallet.findById(transaction.toWallet);
-        if (!recipientWallet) {
-          throw new Error("Recipient wallet not found");
-        }
-        recipientWallet.balance += transaction.amount;
-        await recipientWallet.save();
+        // const recipientWallet = await Wallet.findById(transaction.toWallet);
+        // if (!recipientWallet) {
+        //   throw new Error("Recipient wallet not found");
+        // }
+        // recipientWallet.balance += transaction.amount;
+        // await recipientWallet.save();
 
         const payerWallet = await Wallet.findOne({ user: payerId });
         if (!payerWallet) {
@@ -651,20 +663,20 @@ class WalletService {
         await payerWallet.save();
 
         // Send notifications
-        await NotificationService.notifyQRPayment(
-          payerId,
-          recipientWallet.user.toString(),
-          transaction.amount,
-          transaction._id,
-          "sent"
-        );
-        await NotificationService.notifyQRPayment(
-          recipientWallet.user.toString(),
-          payerId,
-          transaction.amount,
-          transaction._id,
-          "received"
-        );
+        // await NotificationService.notifyQRPayment(
+        //   payerId,
+        //   recipientWallet.user.toString(),
+        //   transaction.amount,
+        //   transaction._id,
+        //   "sent"
+        // );
+        // await NotificationService.notifyQRPayment(
+        //   recipientWallet.user.toString(),
+        //   payerId,
+        //   transaction.amount,
+        //   transaction._id,
+        //   "received"
+        // );
 
         return { message: "Payment processed successfully", paymentIntentId };
       } else {
@@ -680,17 +692,15 @@ class WalletService {
     type : string,
     amount: number,
     fromWalletId: string,
-    toWalletId: string,
     stripePaymentIntentId?: string,
     status = "completed",
     metadata = {}
   ) {
-    logger.info(`Creating transaction: type=${type}, amount=${amount}, fromWallet=${fromWalletId}, toWallet=${toWalletId}, status=${status}`);
+    logger.info(`Creating transaction: type=${type}, amount=${amount}, fromWallet=${fromWalletId}, status=${status}`);
     const transaction = new Transaction({
       type,
       amount,
       fromWallet: fromWalletId,
-      toWallet: toWalletId,
       status,
       stripePaymentIntentId,
       metadata,

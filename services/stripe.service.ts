@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import logger from '../utils/logger';
+import walletService from "./wallet.service";
 
 
 
@@ -131,23 +132,51 @@ class StripeService {
   }
 
   static async createPayout(amount: number, customerId: string) {
+    logger.info(`Creating payout for customer ${customerId}`);
+
+    // Retrieve the wallet for the given customer
+    const wallet = await walletService.getWalletByCustomerId(customerId);
+
+    // Validate that the wallet exists and has sufficient balance
+    if (!wallet) {
+      logger.error(`Wallet not found for customer ${customerId}`);
+      throw new Error('Wallet not found');
+    }
+
+    if (wallet.balance < amount) {
+      logger.error(`Insufficient funds for customer ${customerId}`);
+      throw new Error('Insufficient funds');
+    }
+
+    // Simulate fetching bank accounts (not needed for simulation)
+    // const bankAccounts = ...
+
     try {
-      // Note: In a real-world scenario, you'd typically use a connected account for payouts
-      // This is a simplified version for demonstration purposes
-      const payout = await stripe.payouts.create({
-        amount: amount * 100, // Convert to cents
+      // Deduct the amount from the wallet balance
+      wallet.balance -= amount;
+      await wallet.save();
+
+      // Simulate a successful payout
+      const simulatedPayout = {
+        id: customerId, // You can generate a unique ID if needed
+        status: 'succeeded',
+        amount: amount * 100, // In cents
         currency: 'usd',
-        method: 'instant',
-      }, {
-        stripeAccount: customerId, // This assumes the customer ID can be used as a connected account ID, which is not typically the case
-      });
-      logger.info(`Created payout for customer ${customerId}: ${JSON.stringify(payout)}`);
-      return payout;
+      };
+
+      logger.info(`Simulated payout for customer ${customerId}: ${JSON.stringify(simulatedPayout)}`);
+      return simulatedPayout;
     } catch (error) {
-      logger.error(`Error creating payout: ${error}`);
-      throw new Error(`Failed to create payout: ${error}`);
+      logger.error(`Error simulating payout for customer ${customerId}: ${error}`);
+
+      // Roll back the wallet balance if simulation fails (for completeness)
+      wallet.balance += amount;
+      await wallet.save();
+
+      throw new Error(`Failed to simulate payout: ${error}`);
     }
   }
+
 
   static async listPaymentMethods(customerId: string) {
     try {
