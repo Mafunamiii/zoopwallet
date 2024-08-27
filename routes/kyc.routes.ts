@@ -5,16 +5,25 @@ import {
   authenticateJWT,
   authenticateAdmin,
 } from "../middleware/auth.middleware";
+import logger from "../utils/logger";
 // import upload from "../middleware/file-upload.middleware";
 
 const kycRouter = express.Router();
 
 kycRouter.post("/initiate", authenticateJWT, async (req: Request, res: Response) => {
+  logger.info('Request body:', req.body);
+  if (!req.body.user) {
+    return res.status(400).json({ error: 'User information not found in the request body' });
+  }
   try {
-    const kycVerification = await KYCService.initiateKYC(req.body.user.id);
+    const userId = req.body.user._id; // Assuming the user ID is directly in req.body.user
+    // Or, if the user object is nested within req.body
+    // const userId = req.body.user._id; // Or req.body.user.id, depending on your data structure
+
+    const kycVerification = await KYCService.initiateKYC(userId.toString());
     res.status(201).json(kycVerification);
   } catch (error) {
-    res.status(400).json({ error: error });
+    res.status(400).json({ error: error }); // Send only the error message
   }
 });
 

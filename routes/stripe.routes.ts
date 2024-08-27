@@ -1,6 +1,6 @@
 import express from 'express';
-import {getPaymentMethods} from '../controllers/stripe.controller.js';
-import { authenticateJWT } from '../middleware/auth.middleware.js';
+import {getPaymentMethods} from '../controllers/stripe.controller';
+import { authenticateJWT } from '../middleware/auth.middleware';
 
 const router = express.Router();
 

@@ -1,6 +1,6 @@
-import Wallet from '../models/wallet.model.js';
-import PaymentMethod from '../models/payment-method.model.js';
-import Transaction from '../models/transaction.model.js';
+import Wallet from '../models/wallet.model';
+import PaymentMethod from '../models/payment-method.model';
+import Transaction from '../models/transaction.model';
 import StripeService from './stripe.service';
 import KYCVerification from "../models/kyc-verification.model";
 import NotificationService from "./notification.service";
@@ -19,9 +19,11 @@ const STRIPE_TEST_PAYMENT_METHODS = new Set([
 
 class WalletService {
   static async createWallet(userId : string, email : string, initialBalance : number) {
+    logger.info(`Creating wallet for user ${userId} with initial balance ${initialBalance}`);
     try {
       // Check KYC status first
       const kycVerification = await KYCVerification.findOne({ user: userId });
+      logger.info(`KYC verification: ${JSON.stringify(kycVerification)}`);
       if (!kycVerification || kycVerification.status !== "approved") {
         throw new Error(
           "KYC verification is not approved. Cannot create wallet."
@@ -30,12 +32,13 @@ class WalletService {
 
       // Check if user already has a wallet
       const existingWallet = await Wallet.findOne({ user: userId });
+      logger.info(`Existing wallet: ${JSON.stringify(existingWallet)}`);
       if (existingWallet) {
         throw new Error("User already has a wallet");
       }
-
+      logger.info(`Creating customerWallet for user ${userId} with initial balance ${initialBalance}`);
       const stripeCustomer = await StripeService.createCustomer(email);
-
+      logger.info(`Stripe customer: ${JSON.stringify(stripeCustomer)}`);
       const wallet = new Wallet({
         user: userId,
         balance: initialBalance,
@@ -54,7 +57,6 @@ class WalletService {
 
       return wallet;
     } catch (error) {
-      logger.error("Error in createWallet:", error);
       throw new Error(`Failed to create wallet: ${error}`);
     }
   }
@@ -113,7 +115,6 @@ class WalletService {
           depositAmount,
           '',
           wallet._id,
-          paymentIntent.id
         );
 
         // Send notification
@@ -132,25 +133,34 @@ class WalletService {
     }
   }
 
-  static async createPaymentIntent(userId: string, amount: number, paymentMethodId?: string) {
+  static async createPaymentIntent(userId: string, amount: number) {
+    logger.info(`Creating payment intent for user ${userId} with amount ${amount}`);
     const wallet = await Wallet.findOne({ user: userId });
+    logger.info(`Wallet: ${JSON.stringify(wallet)}`);
     if (!wallet) {
       throw new Error("Wallet not found");
     }
-
+    let paymentMethodId;
     // Validate paymentMethodId if provided
-    if (paymentMethodId) {
+    try {
+      logger.info(`Validating payment method for user ${userId}`);
       const paymentMethod = await PaymentMethod.findOne({
         user: userId,
-        stripePaymentMethodId: paymentMethodId
       });
-
+      logger.info(`Payment method: ${JSON.stringify(paymentMethod)}`);
+      paymentMethodId = paymentMethod?.stripePaymentMethodId;
+      logger.info(`Payment method ID: ${paymentMethodId}`);
       if (!paymentMethod) {
         throw new Error("Payment method not found or does not belong to this user");
       }
+
+    } catch (error) {
+      logger.error(`Error validating payment method: ${error}`);
+      throw new Error("Invalid payment method");
     }
     let paymentIntent;
     if (typeof paymentMethodId === "string") {
+      logger.info(`Creating payment intent for user ${userId} with amount ${amount} and payment method ${paymentMethodId}`);
        paymentIntent = await StripeService.createPaymentIntent(
           amount,
           "usd",
@@ -159,13 +169,24 @@ class WalletService {
       );
     }
 
+    if (!paymentIntent) {
+      paymentIntent = await StripeService.createPaymentIntent(
+        amount,
+        "usd",
+        wallet.stripeCustomerId,
+          ''
+      );
+    }
+
     return {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
+      paymentMethodId: paymentMethodId,
     };
   }
 
   static async confirmPaymentIntent(userId: string, paymentIntentId: string, paymentMethodId: string) {
+    logger.info(`Confirming payment intent for user ${userId} with paymentIntentId ${paymentIntentId} and paymentMethodId ${paymentMethodId}`);
     const wallet = await Wallet.findOne({ user: userId });
     if (!wallet) {
       throw new Error("Wallet not found");
@@ -286,15 +307,15 @@ class WalletService {
       await newPaymentMethod.save();
 
       // Send notification
-      try {
-        await NotificationService.notifyPaymentMethodAdded(
-          userId,
-          stripePaymentMethod.card.last4,
-          stripePaymentMethod.card.brand
-        );
-      } catch (notificationError) {
-        logger.error(`Error sending notification: ${notificationError}`);
-      }
+      // try {
+      //   await NotificationService.notifyPaymentMethodAdded(
+      //     userId,
+      //     stripePaymentMethod.card.last4,
+      //     stripePaymentMethod.card.brand
+      //   );
+      // } catch (notificationError) {
+      //   logger.error(`Error sending notification: ${notificationError}`);
+      // }
 
       return { message: "Payment method added successfully" };
     } catch (error) {
@@ -483,7 +504,7 @@ class WalletService {
         amount,
         '', // fromWallet is null for QR code generation
         wallet._id,
-        null,
+        '',
         "pending",
         { paymentId }
       );
@@ -657,7 +678,7 @@ class WalletService {
     amount: number,
     fromWalletId: string,
     toWalletId: string,
-    stripePaymentIntentId = null,
+    stripePaymentIntentId?: string,
     status = "completed",
     metadata = {}
   ) {

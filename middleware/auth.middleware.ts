@@ -16,8 +16,11 @@ export const authenticateJWT = async (req: Request, res: Response, next : NextFu
       return res.status(401).json({ error: 'Access denied. Invalid token format.' });
     }
 
-    const decoded = jwt.verify(token, config.jwtSecret);
-    const user = await User.findById(decoded).select('-password');
+    const decoded = jwt.verify(token, config.jwtSecret) as { id: string }; // Type assertion for clarity
+    logger.info('Decoded token:', decoded);
+    const userId = decoded.id;
+    const user = await User.findById(userId).select('-password');
+    logger.info('found user:', user);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid token. User not found.' });
@@ -49,5 +52,5 @@ export const authenticateAdmin = async (req: Request, res: Response, next : Next
   });
 };
 
-module.exports = { authenticateJWT, authenticateAdmin };
+export default { authenticateJWT, authenticateAdmin };
 

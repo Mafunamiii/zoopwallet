@@ -1,16 +1,22 @@
 import Stripe from 'stripe';
+import logger from '../utils/logger';
 
-const stripe = require('stripe')(require('../config').stripeSecretKey);
-const logger = require('../utils/logger');
+
+
+let stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+
+
+
 class StripeService {
   static async createCustomer(email: string) {
+    logger.info(`Creating Stripe customer for email: ${email}`);
     try {
       const customer = await stripe.customers.create({ email });
       logger.info(`Created Stripe customer for email: ${email}`);
       return customer;
     } catch (error) {
-      logger.error(`Error creating Stripe customer: ${error}`);
-      throw new Error(`Failed to create Stripe customer: ${error}`);
+      logger.error(`Error creating Stripe customer: ${error}`); // Log the error
+      throw new Error(`Failed to create Stripe customer: ${error}`); // Re-throw for higher-level handling
     }
   }
 

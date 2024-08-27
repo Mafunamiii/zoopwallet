@@ -1,11 +1,11 @@
 import nodemailer, {Transporter} from 'nodemailer';
 import config from '../config';
 import logger from '../utils/logger';
-import User, {IUser} from '../models/user.model.js';
+import User, {IUser} from '../models/user.model';
 import {promises as fs} from 'fs';
 import Handlebars from 'handlebars';
 import path from 'path';
-import userModel from "../models/user.model.js";
+
 
 class NotificationService {
     private transporter: Transporter;

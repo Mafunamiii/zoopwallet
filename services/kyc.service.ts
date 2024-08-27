@@ -65,7 +65,7 @@ class KYCService {
     await kycVerification.save();
 
     // Notify user about KYC initiation or auto-approval
-    await NotificationService.notifyKYCUpdate(userId, kycVerification.status);
+    //await NotificationService.notifyKYCUpdate(userId, kycVerification.status);
 
     logger.info(`KYC initiated for user ${userId}. Auto-approve: ${AUTO_APPROVE_KYC}`);
 

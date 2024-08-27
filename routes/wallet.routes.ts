@@ -1,13 +1,15 @@
 import express from "express";
 import WalletService from "../services/wallet.service";
-import { authenticateJWT } from "../middleware/auth.middleware.js";
+import { authenticateJWT } from "../middleware/auth.middleware";
+import logger from "../utils/logger";
 
 const router = express.Router();
 
 router.post("/create", authenticateJWT, async (req, res) => {
+  logger.info("WalletRoutes-Request body:", req.body);
   try {
     const wallet = await WalletService.createWallet(
-      req.body.user.id,
+      req.body.user._id,
       req.body.user.email,
       req.body.initialBalance
     );
@@ -24,10 +26,12 @@ router.post("/create", authenticateJWT, async (req, res) => {
 router.post("/create-payment-intent", authenticateJWT, async (req, res) => {
   try {
     const { amount } = req.body;
+
     const paymentIntent = await WalletService.createPaymentIntent(
       req.body.user.id,
       amount
     );
+
     res.json(paymentIntent);
   } catch (error) {
     res.status(400).json({ error: error });
